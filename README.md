@@ -14,7 +14,7 @@ This project is intended to be easy-to-use. However, there are some setup steps 
 To clone this repository using Git, use:
 
 ```bash
-git clone https://github.com/AndinoFerdiansah/spotify-to-mp3-python.git
+git clone https://github.com/andinoferdi/Spotify-to-mp3.git
 ```
 
 If you're not familiar with Git, you can download the repository as a .zip file by clicking the "Code" button at the top of the GitHub page, then select "Download ZIP." Extract the contents of the .zip file.
