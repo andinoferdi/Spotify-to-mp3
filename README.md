@@ -1,3 +1,4 @@
+
 ---
 
 # Spotify to MP3 - Python
@@ -14,24 +15,31 @@ To clone this repository using Git, use:
 
 ```bash
 git clone https://github.com/AndinoFerdiansah/spotify-to-mp3-python.git
-
+```
 
 If you're not familiar with Git, you can download the repository as a .zip file by clicking the "Code" button at the top of the GitHub page, then select "Download ZIP." Extract the contents of the .zip file.
 
 Open a terminal and navigate to the folder:
 
+```bash
 cd spotify-to-mp3-python/
+```
 
 ### 2. Installing Dependencies
+
 We will install the dependencies using pip, Python's package manager. If you don’t have pip, follow this guide to install it.
 
 To install the required packages, run:
 
+```bash
 pip install -r requirements.txt
+```
 
 If a requirements.txt file is not available, use this command to install packages individually:
 
+```bash
 pip install spotipy youtube_dl youtube_search yt_dlp ffprobe ffmpeg
+```
 
 ### 3. Setting up Spotify
 
@@ -46,15 +54,18 @@ To get a track’s URI from Spotify:
 1. Open Spotify and find the track you want to download.
 2. Right-click the track, select "Share," and click "Copy Spotify URI."
 3. The URI will look like this: spotify:track:4cOdK2wGLETKBW3PvgPWqT.
-Save the characters after spotify:track: (e.g., 4cOdK2wGLETKBW3PvgPWqT) for use in the script.
+   Save the characters after spotify:track: (e.g., 4cOdK2wGLETKBW3PvgPWqT) for use in the script.
 
 ### 5. Running the Program
 
 Run the script by executing the following command in your terminal:
 
+```bash
 python app.py
+```
 
 This will start a local Flask server. Open your browser and navigate to http://localhost:5000. Enter the Spotify track URI to start the download.
 
-Debugging
+### Debugging
+
 If you encounter an error related to ffprobe or ffmpeg, make sure they are installed and accessible in your system PATH. Refer to this solution for more details.
