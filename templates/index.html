@@ -5,11 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify to MP3 Converter</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script> <!-- Library Socket.IO -->
     <script>
-        let interval;
+        const SPOTIFY_TRACK_URI_REGEX = /^https:\/\/open\.spotify\.com\/track\/[A-Za-z0-9]+$/;
+        const socket = io();
+
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+
+        socket.on('progress', function(data) {
+            document.getElementById("progress").innerText = data.message;
+            updateProgressBar(data.progress || 100); // Update progress bar, 100% by default if not specified
+        });
 
         function startDownload(event) {
             event.preventDefault();
+
+            const trackUriInput = document.getElementById('track_uri');
+            const trackUri = trackUriInput.value.trim();
+
+            // Validasi input URI Spotify
+            if (!SPOTIFY_TRACK_URI_REGEX.test(trackUri)) {
+                document.getElementById("progress").innerText = "Invalid Spotify track URI. Please enter a valid Spotify track URL.";
+                document.getElementById("progress").classList.add("error-message");
+                trackUriInput.focus();
+                return;
+            } else {
+                document.getElementById("progress").classList.remove("error-message");
+            }
+
+            // Reset tampilan progres
+            document.getElementById("progress").innerText = "Starting conversion...";
+            document.getElementById("downloadLink").style.display = "none";
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("progress-bar-container").style.display = "block";
+            updateProgressBar(0);
 
             const formData = new FormData(document.getElementById('trackForm'));
 
@@ -19,31 +50,30 @@
             })
             .then(response => response.json())
             .then(data => {
+                document.getElementById("loading").style.display = "none"; // Hide loading indicator
                 if (data.status === 'success') {
                     document.getElementById("progress").innerText = data.message;
                     const downloadLink = document.getElementById("downloadLink");
                     downloadLink.href = data.download_url;
                     downloadLink.style.display = "block";
-                    clearInterval(interval); // Hentikan polling setelah selesai
+                    updateProgressBar(100); // Set progress bar to 100% on success
                 } else {
                     document.getElementById("progress").innerText = "Error: " + data.message;
+                    document.getElementById("progress").classList.add("error-message");
+                    updateProgressBar(0); // Reset progress bar on error
                 }
             })
             .catch(error => {
+                document.getElementById("loading").style.display = "none";
                 document.getElementById("progress").innerText = "Error: " + error;
+                document.getElementById("progress").classList.add("error-message");
+                updateProgressBar(0); // Reset progress bar on error
             });
         }
 
-        function checkStatus() {
-            fetch('/status')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("progress").innerText = data.progress;
-                });
-        }
-
-        function startProgress() {
-            interval = setInterval(checkStatus, 2000);
+        function updateProgressBar(percentage) {
+            const progressBar = document.getElementById("progress-bar");
+            progressBar.style.width = percentage + "%";
         }
     </script>
 </head>
@@ -52,11 +82,22 @@
         <h1>Spotify to MP3 Converter</h1>
 
         <!-- Form untuk mengunduh single track -->
-        <form id="trackForm" onsubmit="startProgress(); startDownload(event)">
+        <form id="trackForm" onsubmit="startDownload(event)">
             <label for="track_uri">Spotify Track URI:</label>
-            <input type="text" id="track_uri" autocomplete="off" name="track_uri" required>
+            <input type="text" id="track_uri" autocomplete="off" name="track_uri" required placeholder="Enter Spotify track URI">
             <button type="submit">Convert Track</button>
         </form>
+
+        <!-- Loading indicator -->
+        <div id="loading" style="display: none; margin-top: 20px;">
+            <img src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." width="50">
+            <p>Converting track, please wait...</p>
+        </div>
+
+        <!-- Progres bar -->
+        <div id="progress-bar-container">
+            <div id="progress-bar"></div>
+        </div>
 
         <!-- Menampilkan progres -->
         <div id="progress" style="margin-top: 20px; font-weight: bold;">Status: Waiting for input...</div>
