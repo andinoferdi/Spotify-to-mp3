@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify to MP3 Converter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        let interval;
+
+        function startDownload(event) {
+            event.preventDefault();
+
+            const formData = new FormData(document.getElementById('trackForm'));
+
+            fetch('/convert', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById("progress").innerText = data.message;
+                    const downloadLink = document.getElementById("downloadLink");
+                    downloadLink.href = data.download_url;
+                    downloadLink.style.display = "block";
+                    clearInterval(interval); // Hentikan polling setelah selesai
+                } else {
+                    document.getElementById("progress").innerText = "Error: " + data.message;
+                }
+            })
+            .catch(error => {
+                document.getElementById("progress").innerText = "Error: " + error;
+            });
+        }
+
+        function checkStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("progress").innerText = data.progress;
+                });
+        }
+
+        function startProgress() {
+            interval = setInterval(checkStatus, 2000);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Spotify to MP3 Converter</h1>
+
+        <!-- Form untuk mengunduh single track -->
+        <form id="trackForm" onsubmit="startProgress(); startDownload(event)">
+            <label for="track_uri">Spotify Track URI:</label>
+            <input type="text" id="track_uri" autocomplete="off" name="track_uri" required>
+            <button type="submit">Convert Track</button>
+        </form>
+
+        <!-- Menampilkan progres -->
+        <div id="progress" style="margin-top: 20px; font-weight: bold;">Status: Waiting for input...</div>
+        
+        <!-- Link untuk mengunduh file setelah siap -->
+        <a id="downloadLink" href="#" style="display: none; margin-top: 10px;">Download File</a>
+    </div>
+</body>
+</html>
