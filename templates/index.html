@@ -5,27 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YT Music to MP3 Converter</title>
     <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
   <body>
     <div class="container">
       <h1>YT Music to MP3 Converter</h1>
-      <form action="/" method="POST">
+      <form id="url-form">
         <label for="url">Enter YouTube Music Link:</label>
         <input
           type="text"
           id="url"
           name="url"
+          autocomplete="off"
           placeholder="https://music.youtube.com/watch?v=..."
           required
         />
-        <button type="submit">Convert & Download</button>
+        <button type="button" id="get-metadata-btn">Get Metadata</button>
+        <button type="button" id="convert-btn" style="display: none">
+          Convert & Download
+        </button>
       </form>
-      {% if filename %}
-      <div class="download-section">
-        <p>File ready for download:</p>
-        <a href="/downloads/{{ filename }}" download>Download MP3</a>
+
+      <div id="loading-indicator" style="display: none">
+        <p>Loading... Please wait.</p>
+        <div class="spinner"></div>
       </div>
-      {% endif %}
+
+      <div id="metadata-container" style="display: none">
+        <div class="thumbnail-container">
+          <img
+            id="thumbnail"
+            src=""
+            alt="Album Thumbnail"
+            class="album-thumbnail"
+          />
+        </div>
+        <h2 id="title"></h2>
+        <p id="artist"></p>
+        <p id="album"></p>
+      </div>
+
+      <div id="download-container" style="display: none">
+        <h2>Conversion Successful!</h2>
+        <p>File is ready for download:</p>
+        <a id="download-link" class="download-btn">Download MP3</a>
+      </div>
     </div>
+
+    <script>
+      $(document).ready(function () {
+        $("#get-metadata-btn").click(function () {
+          const url = $("#url").val();
+          $("#loading-indicator").show();
+          $.ajax({
+            url: "/get_metadata",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ url }),
+            success: function (data) {
+              $("#loading-indicator").hide();
+              $("#metadata-container").show();
+              $("#thumbnail").attr("src", data.thumbnail);
+              $("#title").text(data.title);
+              $("#artist").text("Artist: " + data.artist);
+              $("#album").text("Album: " + data.album);
+
+              $("#get-metadata-btn").hide();
+              $("#convert-btn").show();
+            },
+            error: function (xhr) {
+              $("#loading-indicator").hide();
+              alert("Error: " + xhr.responseJSON.error);
+            },
+          });
+        });
+
+        $("#convert-btn").click(function () {
+          const url = $("#url").val();
+          $("#loading-indicator").show();
+          $.ajax({
+            url: "/convert",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ url }),
+            success: function (data) {
+              $("#loading-indicator").hide();
+              $("#download-container").show();
+              $("#download-link").attr("href", "/downloads/" + data.filename);
+            },
+            error: function (xhr) {
+              $("#loading-indicator").hide();
+              alert("Error: " + xhr.responseJSON.error);
+            },
+          });
+        });
+      });
+    </script>
   </body>
 </html>

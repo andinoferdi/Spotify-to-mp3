@@ -1,11 +1,25 @@
 import os
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from yt_dlp import YoutubeDL
 import subprocess
 
 app = Flask(__name__)
 DOWNLOAD_FOLDER = "downloads"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
+def get_metadata(youtube_url):
+    options = {
+        'quiet': True,
+        'no_warnings': True,
+    }
+    with YoutubeDL(options) as ydl:
+        info = ydl.extract_info(youtube_url, download=False)
+        return {
+            'title': info.get('title', 'Unknown Title'),
+            'artist': info.get('artist', 'Unknown Artist'),
+            'album': info.get('album', 'Unknown Album'),
+            'thumbnail': info.get('thumbnail', ''),
+        }
 
 def download_youtube_music_as_mp3(youtube_url):
     options = {
@@ -33,20 +47,35 @@ def download_youtube_music_as_mp3(youtube_url):
     os.replace(reduced_volume_file, original_file)
     return filename
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def index():
-    if request.method == "POST":
-        youtube_url = request.form["url"]
-        try:
-            filename = download_youtube_music_as_mp3(youtube_url)
-            return render_template("index.html", filename=filename)
-        except Exception as e:
-            return f"An error occurred: {e}", 500
     return render_template("index.html")
+
+@app.route("/get_metadata", methods=["POST"])
+def get_metadata_route():
+    youtube_url = request.json.get("url")
+    try:
+        metadata = get_metadata(youtube_url)
+        return jsonify(metadata)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/convert", methods=["POST"])
+def convert_route():
+    youtube_url = request.json.get("url")
+    try:
+        filename = download_youtube_music_as_mp3(youtube_url)
+        return jsonify({"filename": filename})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/downloads/<filename>")
 def downloads(filename):
-    return send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
+    file_path = os.path.join(DOWNLOAD_FOLDER, filename)
+    if os.path.isfile(file_path):
+        return send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True, mimetype='audio/mpeg')
+    else:
+        return "File not found", 404
 
 if __name__ == "__main__":
     app.run(debug=True)
